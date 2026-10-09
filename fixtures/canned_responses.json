@@ -1,0 +1,279 @@
+{
+  "profile_and_queries": {
+    "profile": {
+      "seniority": "mid",
+      "years_experience": 2.5,
+      "top_skills": [
+        "python",
+        "fastapi",
+        "react",
+        "typescript",
+        "postgresql",
+        "docker",
+        "redis",
+        "rest apis",
+        "tailwind css",
+        "aws",
+        "git",
+        "microservices"
+      ],
+      "domains": [
+        "web development",
+        "saas",
+        "distributed systems",
+        "cloud computing"
+      ],
+      "past_titles": [
+        "software engineer",
+        "associate software engineer"
+      ],
+      "education": "B.Tech in Computer Science and Engineering, National Institute of Technology",
+      "location": "Bangalore, India",
+      "target_titles": [
+        "Full Stack Engineer",
+        "Backend Python Engineer",
+        "Frontend Engineer"
+      ]
+    },
+    "queries": [
+      {
+        "q": "full stack developer python react bangalore fte",
+        "angle": "exact_title",
+        "site": null
+      },
+      {
+        "q": "backend engineer fastapi postgresql remote india",
+        "angle": "adjacent_title",
+        "site": null
+      },
+      {
+        "q": "python react docker rest api developer jobs",
+        "angle": "skill_stack",
+        "site": null
+      },
+      {
+        "q": "software engineer python react jobs",
+        "angle": "site_targeted",
+        "site": "wellfound.com"
+      },
+      {
+        "q": "full stack web development intern python react",
+        "angle": "site_targeted",
+        "site": "internshala.com"
+      }
+    ]
+  },
+  "default_job_extractions": [
+    {
+      "idx": 0,
+      "is_real_posting": true,
+      "title": "Full Stack Engineer (Python & React)",
+      "company": "TechCorp",
+      "location": "Bangalore",
+      "remote": true,
+      "job_type": "fte",
+      "salary_min": 14.0,
+      "salary_max": 18.0,
+      "salary_currency": "INR",
+      "salary_period": "year",
+      "skills_required": ["python", "fastapi", "react", "postgresql", "docker", "aws"],
+      "experience_years_min": 2.0,
+      "posted_date": "2026-10-04T10:00:00Z"
+    },
+    {
+      "idx": 1,
+      "is_real_posting": true,
+      "title": "Backend Python Engineer",
+      "company": "CloudScale",
+      "location": "Bangalore",
+      "remote": false,
+      "job_type": "fte",
+      "salary_min": 1500000.0,
+      "salary_max": 2200000.0,
+      "salary_currency": "INR",
+      "salary_period": "year",
+      "skills_required": ["python", "fastapi", "redis", "postgresql", "docker"],
+      "experience_years_min": 2.0,
+      "posted_date": "2026-10-07T12:00:00Z"
+    },
+    {
+      "idx": 2,
+      "is_real_posting": true,
+      "title": "Frontend Engineer (React / TypeScript)",
+      "company": "Apex Digital",
+      "location": "Bangalore",
+      "remote": true,
+      "job_type": "fte",
+      "salary_min": 10.0,
+      "salary_max": 14.0,
+      "salary_currency": "INR",
+      "salary_period": "year",
+      "skills_required": ["react", "typescript", "tailwind css", "rest apis"],
+      "experience_years_min": 1.0,
+      "posted_date": "2026-09-29T08:30:00Z"
+    },
+    {
+      "idx": 3,
+      "is_real_posting": true,
+      "title": "Software Engineer (Full Stack)",
+      "company": "HyperGrow",
+      "location": "Remote",
+      "remote": true,
+      "job_type": "fte",
+      "salary_min": 25000.0,
+      "salary_max": 35000.0,
+      "salary_currency": "USD",
+      "salary_period": "year",
+      "skills_required": ["python", "fastapi", "react", "next.js", "postgresql"],
+      "experience_years_min": 1.0,
+      "posted_date": "2026-10-06T15:00:00Z"
+    },
+    {
+      "idx": 4,
+      "is_real_posting": true,
+      "title": "Full Stack Web Development Internship",
+      "company": "NexusTech",
+      "location": "Bangalore",
+      "remote": true,
+      "job_type": "intern",
+      "salary_min": 25000.0,
+      "salary_max": 35000.0,
+      "salary_currency": "INR",
+      "salary_period": "month",
+      "skills_required": ["python", "fastapi", "react", "postgresql"],
+      "experience_years_min": 0.0,
+      "posted_date": "2026-10-05T09:00:00Z"
+    },
+    {
+      "idx": 5,
+      "is_real_posting": true,
+      "title": "Software Developer - Python / Web Systems",
+      "company": "IndieCorp",
+      "location": "Hyderabad",
+      "remote": true,
+      "job_type": "fte",
+      "salary_min": 8.0,
+      "salary_max": 12.0,
+      "salary_currency": "INR",
+      "salary_period": "year",
+      "skills_required": ["python", "sql", "rest apis", "git", "react"],
+      "experience_years_min": 1.0,
+      "posted_date": "2026-10-01T11:20:00Z"
+    },
+    {
+      "idx": 6,
+      "is_real_posting": true,
+      "title": "Python Microservices Developer",
+      "company": "FinTech Pulse",
+      "location": "Bangalore",
+      "remote": false,
+      "job_type": "fte",
+      "salary_min": null,
+      "salary_max": null,
+      "salary_currency": null,
+      "salary_period": "unknown",
+      "skills_required": ["python", "fastapi", "docker", "redis", "postgresql"],
+      "experience_years_min": 2.0,
+      "posted_date": "2026-10-03T14:10:00Z"
+    },
+    {
+      "idx": 7,
+      "is_real_posting": true,
+      "title": "React Frontend Developer",
+      "company": "DataSense",
+      "location": "Remote",
+      "remote": true,
+      "job_type": "fte",
+      "salary_min": 1200000.0,
+      "salary_max": 1600000.0,
+      "salary_currency": "INR",
+      "salary_period": "year",
+      "skills_required": ["react", "typescript", "tailwind css"],
+      "experience_years_min": 2.0,
+      "posted_date": "2026-10-02T16:45:00Z"
+    }
+  ],
+  "default_scores": [
+    {
+      "idx": 0,
+      "score": 95,
+      "reason": "Outstanding skill alignment with Python, FastAPI and React plus matching experience level.",
+      "matched_skills": ["python", "fastapi", "react", "postgresql", "docker"],
+      "missing_skills": []
+    },
+    {
+      "idx": 1,
+      "score": 90,
+      "reason": "Direct backend match with FastAPI, Redis and PostgreSQL within candidate location preference.",
+      "matched_skills": ["python", "fastapi", "redis", "postgresql", "docker"],
+      "missing_skills": []
+    },
+    {
+      "idx": 2,
+      "score": 85,
+      "reason": "Strong frontend alignment with React and TypeScript in candidate target location.",
+      "matched_skills": ["react", "typescript", "tailwind css", "rest apis"],
+      "missing_skills": []
+    },
+    {
+      "idx": 3,
+      "score": 92,
+      "reason": "Excellent remote full-stack opportunity matching primary stack and experience level.",
+      "matched_skills": ["python", "fastapi", "react", "postgresql"],
+      "missing_skills": ["next.js"]
+    },
+    {
+      "idx": 4,
+      "score": 78,
+      "reason": "Good internship match with matching stack though candidate possesses 2.5 years experience.",
+      "matched_skills": ["python", "fastapi", "react", "postgresql"],
+      "missing_skills": []
+    },
+    {
+      "idx": 5,
+      "score": 82,
+      "reason": "Solid entry/mid software developer role matching Python and REST API competencies.",
+      "matched_skills": ["python", "rest apis", "git", "react"],
+      "missing_skills": []
+    },
+    {
+      "idx": 6,
+      "score": 88,
+      "reason": "High stack overlap with FastAPI microservices and Docker; salary unlisted.",
+      "matched_skills": ["python", "fastapi", "docker", "redis", "postgresql"],
+      "missing_skills": []
+    },
+    {
+      "idx": 7,
+      "score": 80,
+      "reason": "Great remote React opportunity with high compensation matching frontend background.",
+      "matched_skills": ["react", "typescript", "tailwind css"],
+      "missing_skills": []
+    }
+  ],
+  "refiner_output": {
+    "diagnosis": "Previous searches were overly restrictive on specific title combinations.",
+    "queries": [
+      {
+        "q": "software engineer python fastapi remote india",
+        "angle": "adjacent_title",
+        "site": null
+      },
+      {
+        "q": "full stack developer react bangalore hiring",
+        "angle": "exact_title",
+        "site": null
+      },
+      {
+        "q": "python web developer careers bangalore",
+        "angle": "skill_stack",
+        "site": "naukri.com"
+      },
+      {
+        "q": "early stage startup software engineer python react",
+        "angle": "site_targeted",
+        "site": "wellfound.com"
+      }
+    ]
+  }
+}
