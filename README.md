@@ -304,44 +304,65 @@ resume-job-matcher/
 
 - Python 3.11+
 - Node.js 18+
-- API keys (all have free tiers):
-  - [Google AI Studio](https://aistudio.google.com/) for Gemini
-  - [Groq Console](https://console.groq.com/)
-  - [Exa](https://exa.ai/)
-- DuckDuckGo needs no key.
-- Optional, only for scanned (image) resumes: the Tesseract and Poppler system binaries.
 
-### Backend
+> [!IMPORTANT]
+> **You must obtain your own API keys.**
+> Do **not** commit your `.env` file or expose your API keys. The `.env` file is already listed in `.gitignore` to prevent secret leaks. All required providers offer generous **free tiers**:
+> 
+> 1. **Google Gemini Flash (`GOOGLE_API_KEY`)**: Get a free API key at [Google AI Studio](https://aistudio.google.com/).
+> 2. **Groq Llama 3.1 8B (`GROQ_API_KEY`)**: Get a free API key at [Groq Console](https://console.groq.com/).
+> 3. **Exa Search (`EXA_API_KEY`)**: Sign up and generate a key at [Exa AI](https://exa.ai/) (includes free search credits).
+> 4. **DuckDuckGo**: Needs **no key** (used automatically as fallback).
+> 5. **LangSmith (`LANGSMITH_API_KEY`)**: *(Optional)* for execution tracing at [smith.langchain.com](https://smith.langchain.com/).
+
+### Backend Setup
 
 ```bash
 git clone <your-repo-url> resume-job-matcher
 cd resume-job-matcher/backend
 
+# Create and activate virtual environment
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 
+# Install dependencies
 pip install -r requirements.txt
 
-cp ../.env.example ../.env         # then add your keys
+# Copy environment template and add your own API keys
+cp ../.env.example ../.env         # Windows: copy ..\.env.example ..\.env
+```
+
+Open `.env` in your editor and enter your keys:
+```env
+GOOGLE_API_KEY=your_gemini_api_key_here
+GROQ_API_KEY=your_groq_api_key_here
+EXA_API_KEY=your_exa_api_key_here
+MOCK_LLM=false                     # set to false for live API calls, true for zero-token mock testing
+```
+
+Start the backend server:
+```bash
 uvicorn api:app --reload --port 8000
 ```
 
-### Frontend
+### Frontend Setup
 
+In a new terminal:
 ```bash
 cd frontend
 npm install
 npm run dev                        # opens http://localhost:5173
 ```
 
-### Try it without spending any quota
+### Try it without spending any quota (Mock Mode)
 
+If you haven't received your API keys yet or want to test offline:
 ```bash
 # in .env
 MOCK_LLM=true
 ```
 
-The full graph, streaming, and UI run on canned fixtures with zero API calls.
+The full graph, streaming, and UI will run with zero external API calls using canned fixtures.
 
 ---
 
@@ -349,13 +370,13 @@ The full graph, streaming, and UI run on canned fixtures with zero API calls.
 
 ### Environment variables (`.env`)
 
-| Variable | Required | Description |
-|---|---|---|
-| `GOOGLE_API_KEY` | Yes | Gemini API key |
-| `GROQ_API_KEY` | Yes | Groq API key |
-| `EXA_API_KEY` | Yes | Exa search key |
-| `LANGSMITH_API_KEY` | No | Optional graph tracing |
-| `MOCK_LLM` | No | `true` returns canned LLM output |
+| Variable | Required | Description | Where to Get |
+|---|---|---|---|
+| `GOOGLE_API_KEY` | Yes (for live mode) | Gemini 1.5 Flash key | [Google AI Studio](https://aistudio.google.com/) |
+| `GROQ_API_KEY` | Yes (for live mode) | Groq Llama 3.1 8B key | [Groq Console](https://console.groq.com/) |
+| `EXA_API_KEY` | Yes (for live mode) | Exa web search key | [Exa.ai](https://exa.ai/) |
+| `LANGSMITH_API_KEY` | No | Optional LangGraph tracing | [LangSmith](https://smith.langchain.com/) |
+| `MOCK_LLM` | No | `true` runs on fixtures, `false` makes live calls | Local toggle |
 
 ### Tunable limits (`backend/config.py`)
 

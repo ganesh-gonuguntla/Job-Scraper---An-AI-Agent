@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+backend/.venv/
+.venv/
+env/
+venv/
+ENV/
+.pytest_cache/
+
+# SQLite data and checkpoints
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Environment secrets and sensitive keys
+.env
+.env.*
+*.env
+!.env.example
+*.pem
+*.key
+*.cert
+*.crt
+secrets/
+credentials.json
+service_account*.json
+
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

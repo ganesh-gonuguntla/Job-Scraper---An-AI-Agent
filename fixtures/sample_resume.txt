@@ -1,0 +1,38 @@
+Alex Rivera
+Bangalore, Karnataka, India | alex.rivera@example.com | +91 98765 43210
+Portfolio: https://alexrivera.dev | GitHub: github.com/alexrivera | LinkedIn: linkedin.com/in/alexrivera
+
+SUMMARY
+Versatile Software Engineer with 2.5 years of professional experience building scalable web applications, distributed backend services, and interactive user interfaces. Proficient in Python, FastAPI, React, TypeScript, and cloud deployments. Passionate about clean code, high-throughput microservices, and modern UI engineering.
+
+EXPERIENCE
+Software Engineer | CloudScale Technologies, Bangalore | July 2024 - Present
+- Designed and maintained high-concurrency RESTful APIs using Python, FastAPI, and PostgreSQL handling over 10M daily requests.
+- Integrated Redis caching layers and optimized database queries, reducing average endpoint latency by 35%.
+- Implemented real-time dashboard analytics and event streaming pipelines with WebSockets and Server-Sent Events.
+- Led the migration of legacy monolithic endpoints to containerized Docker microservices orchestrated via Kubernetes on AWS.
+
+Associate Software Engineer | Apex Digital Labs, Bangalore | January 2023 - June 2024
+- Built responsive customer-facing web apps with React, TypeScript, Tailwind CSS, and Redux Toolkit.
+- Developed backend microservices using Node.js and Python for automated document processing and user authentication.
+- Wrote unit and integration test suites using PyTest and Jest, boosting repository test coverage from 60% to 88%.
+- Collaborated in an Agile Scrum environment with bi-weekly sprints, participating in system design reviews and CI/CD automation via GitHub Actions.
+
+EDUCATION
+Bachelor of Technology (B.Tech) in Computer Science and Engineering
+National Institute of Technology, Graduated 2022 | CGPA: 8.6/10
+
+TECHNICAL SKILLS
+Languages: Python, TypeScript, JavaScript, SQL, HTML5, CSS3
+Backend: FastAPI, Django, Flask, Node.js, REST APIs, Microservices
+Frontend: React, Next.js, Redux, Tailwind CSS, Vite, HTML/CSS
+Databases & Tools: PostgreSQL, Redis, MongoDB, Docker, Git, Linux, Postman, AWS (EC2, S3)
+Concepts: System Design, CI/CD, Asynchronous Programming, Object-Oriented Design, Agile
+
+PROJECTS
+Job Scraper & AI Recommender | Python, FastAPI, React, LangGraph
+- Developed an automated job discovery pipeline utilizing web scraping, LLM-based profile synthesis, and semantic ranking algorithms.
+- Implemented live Server-Sent Events (SSE) updates to stream processing status and score calculations to the user interface.
+
+Real-time Collaboration Canvas | React, TypeScript, WebSockets
+- Built an interactive multiplayer whiteboard with synchronized state updates, conflict resolution, and SVG rendering.
