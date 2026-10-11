@@ -1,0 +1,17 @@
+.git
+.github
+.env
+.pytest_cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.venv
+venv
+env
+frontend/node_modules
+frontend/dist
+data/*.db
+data/*.sqlite
+data/*.sqlite-shm
+data/*.sqlite-wal
