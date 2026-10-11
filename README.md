@@ -250,8 +250,8 @@ The fastest and most reliable way to run JobPulse is using **Docker Compose**:
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/ganesh-gonuguntla/Job-Scraper---An-AI-Agent.git
-cd Job-Scraper---An-AI-Agent
+git clone https://github.com/balajirapolu/JobPulse-AI-Powered-Multi-Agent-Job-Recommender.git
+cd JobPulse-AI-Powered-Multi-Agent-Job-Recommender
 ```
 
 ### 2. Configure Environment Variables
