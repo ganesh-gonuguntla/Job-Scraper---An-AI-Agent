@@ -4,9 +4,9 @@
 
 ![Python](https://img.shields.io/badge/Python-3.11+-blue)
 ![LangGraph](https://img.shields.io/badge/Orchestration-LangGraph-orange)
-![LLM](https://img.shields.io/badge/LLM-Groq_Llama_3.3-purple)
-![Docker](https://img.shields.io/badge/Docker-Compose_Ready-2496ed)
-![Frontend](https://img.shields.io/badge/Frontend-React_18_%2B_Vite-61dafb)
+![LLM](https://img.shields.io/badge/LLM-Groq-blueviolet)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED)
+![Frontend](https://img.shields.io/badge/Frontend-React-61DAFB)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 ---
