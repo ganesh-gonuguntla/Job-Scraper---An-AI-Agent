@@ -2,12 +2,12 @@
 
 > A high-performance, LangGraph-orchestrated multi-agent system that analyzes your PDF resume, constructs a verified candidate profile, searches live job boards via official APIs, applies deterministic rule filters, scores postings with Groq LLMs against a fixed 100-point rubric, and provides instant zero-token re-ranking. Fully containerized with Docker Compose.
 
-![Python](https://img.shields.io/badge/python-3.11+-blue)
-![LangGraph](https://img.shields.io/badge/orchestration-LangGraph-orange)
-![LLM](https://img.shields.io/badge/LLM-Groq%20(Llama%203.3%20%2F%20Qwen%202.5)-purple)
-![Docker](https://img.shields.io/badge/docker-compose%20ready-2496ed)
-![Frontend](https://img.shields.io/badge/frontend-React%2018%20%2B%20Vite%20%2B%20Tailwind-61dafb)
-![License](https://img.shields.io/badge/license-MIT-green)
+![Python](https://img.shields.io/badge/Python-3.11+-blue)
+![LangGraph](https://img.shields.io/badge/Orchestration-LangGraph-orange)
+![LLM](https://img.shields.io/badge/LLM-Groq_Llama_3.3-purple)
+![Docker](https://img.shields.io/badge/Docker-Compose_Ready-2496ed)
+![Frontend](https://img.shields.io/badge/Frontend-React_18_%2B_Vite-61dafb)
+![License](https://img.shields.io/badge/License-MIT-green)
 
 ---
 
