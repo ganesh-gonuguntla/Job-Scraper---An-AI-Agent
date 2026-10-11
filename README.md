@@ -4,7 +4,7 @@
 
 ![Python](https://img.shields.io/badge/Python-3.11+-blue)
 ![LangGraph](https://img.shields.io/badge/Orchestration-LangGraph-orange)
-![LLM](https://img.shields.io/badge/LLM-Groq-blueviolet)
+![LLM](https://img.shields.io/badge/LLM-Groq-F55036)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED)
 ![Frontend](https://img.shields.io/badge/Frontend-React-61DAFB)
 ![License](https://img.shields.io/badge/License-MIT-green)
