@@ -1,4 +1,5 @@
-const API_BASE = "/api";
+const rawApiBase = import.meta.env.VITE_API_BASE_URL || "/api";
+const API_BASE = rawApiBase.replace(/\/+$/, "");
 
 export async function getConfig() {
   try {
