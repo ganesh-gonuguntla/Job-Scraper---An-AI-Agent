@@ -28,6 +28,10 @@ class GraphState(TypedDict):
     scored_jobs: list[ScoredJob]
     final_jobs: list[ScoredJob]
 
+    # Funnel and audits
+    funnel: dict
+    audit_statuses: dict
+
     # Control
     retry_count: int
     gate_passed: bool

@@ -12,18 +12,19 @@ import {
   DollarSign, 
   Briefcase, 
   Sparkles,
-  X
+  X,
+  Info
 } from 'lucide-react';
 
 export default function UploadPreferencesScreen({ onSubmit, isSubmitting }) {
   const [file, setFile] = useState(null);
-  const [useSample, setUseSample] = useState(false);
   const [jobTypes, setJobTypes] = useState(['fte', 'intern']);
   const [minSalaryLPA, setMinSalaryLPA] = useState(10);
   const [enableMinSalary, setEnableMinSalary] = useState(false);
-  const [locations, setLocations] = useState(['Bangalore', 'remote']);
+  const [locations, setLocations] = useState([]);
   const [locationInput, setLocationInput] = useState('');
   const [remoteOnly, setRemoteOnly] = useState(false);
+  const [anyLocation, setAnyLocation] = useState(true); // Default to Any Location
   const [sortBy, setSortBy] = useState('match');
   const [maxAgeDays, setMaxAgeDays] = useState(30);
 
@@ -33,7 +34,6 @@ export default function UploadPreferencesScreen({ onSubmit, isSubmitting }) {
     onDrop: (acceptedFiles) => {
       if (acceptedFiles.length > 0) {
         setFile(acceptedFiles[0]);
-        setUseSample(false);
       }
     },
   });
@@ -54,20 +54,42 @@ export default function UploadPreferencesScreen({ onSubmit, isSubmitting }) {
       const loc = locationInput.trim();
       if (!locations.includes(loc)) {
         setLocations([...locations, loc]);
+        setAnyLocation(false); // Mutually exclusive: adding specific location unchecks Any
       }
       setLocationInput('');
     }
   };
 
   const handleRemoveLocation = (locToRemove) => {
-    setLocations(locations.filter((l) => l !== locToRemove));
+    const nextLocations = locations.filter((l) => l !== locToRemove);
+    setLocations(nextLocations);
+    if (nextLocations.length === 0) {
+      setAnyLocation(true);
+    }
   };
+
+  const handleToggleAnyLocation = (checked) => {
+    setAnyLocation(checked);
+    if (checked) {
+      setLocations([]);
+      setLocationInput('');
+    }
+  };
+
+  const isReadyToAnalyze = Boolean(file);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const finalLocations = remoteOnly 
-      ? ['remote'] 
-      : (locations.length > 0 ? locations : ['India', 'remote']);
+    if (!isReadyToAnalyze) return;
+
+    let finalLocations = ['any'];
+    if (anyLocation) {
+      finalLocations = ['any'];
+    } else if (remoteOnly && locations.length === 0) {
+      finalLocations = ['remote'];
+    } else if (locations.length > 0) {
+      finalLocations = locations;
+    }
 
     const preferences = {
       job_types: jobTypes,
@@ -75,351 +97,334 @@ export default function UploadPreferencesScreen({ onSubmit, isSubmitting }) {
       locations: finalLocations,
       sort_by: sortBy,
       max_age_days: maxAgeDays,
+      remote_only: remoteOnly,
     };
 
     onSubmit({
-      file: useSample ? null : file,
+      file,
       preferences,
     });
   };
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 15 }} 
+      initial={{ opacity: 0, y: 12 }} 
       animate={{ opacity: 1, y: 0 }} 
-      exit={{ opacity: 0, y: -15 }}
-      transition={{ duration: 0.3 }}
-      className="max-w-4xl mx-auto py-8 px-4"
+      exit={{ opacity: 0, y: -12 }}
+      transition={{ duration: 0.25 }}
+      className="max-w-[1200px] mx-auto py-6 sm:py-8 px-4 sm:px-6"
     >
-      {/* Hero Banner */}
-      <div className="text-center mb-10">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold mb-4">
+      {/* Hero Header */}
+      <div className="text-center mb-6 sm:mb-8">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D4C4A8]/10 border border-[#D4C4A8]/25 text-[#D4C4A8] text-xs font-semibold mb-3">
           <Sparkles className="w-3.5 h-3.5" />
-          <span>Next-Gen LangGraph Architecture</span>
+          <span>Autonomous Career Intelligence Pipeline</span>
         </div>
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight mb-4">
-          Find High-Fit Jobs Tailored to <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-blue-400">Your Resume</span>
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#E5E7EB] tracking-tight mb-2.5">
+          Find High-Fit Jobs Tailored to <span className="text-[#D4C4A8]">Your Experience</span>
         </h1>
-        <p className="text-slate-400 max-w-2xl mx-auto text-base sm:text-lg">
-          Upload your resume and set your criteria. Our AI agent extracts your competencies, searches live across the web in parallel, scores each opening against your profile, and ranks matches deterministically.
+        <p className="text-[#9CA3AF] max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
+          Our AI agent reads your resume, pulls real open roles from job boards and company career pages, verifies they are still live, and ranks every match from 20% to 100%.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Step 1: Resume Upload */}
-        <div className="glass-panel rounded-2xl p-6 sm:p-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <FileText className="w-5 h-5 text-emerald-400" />
-              1. Upload Your Resume (PDF)
-            </h2>
-            <button
-              type="button"
-              onClick={() => {
-                setUseSample(!useSample);
-                if (!useSample) setFile(null);
-              }}
-              className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${
-                useSample 
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' 
-                  : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
-              }`}
-            >
-              {useSample ? '✓ Using Sample Developer Resume' : 'Use Sample Resume (Instant Test)'}
-            </button>
-          </div>
-
-          {!useSample ? (
-            <div
-              {...getRootProps()}
-              className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200 ${
-                isDragActive
-                  ? 'border-emerald-500 bg-emerald-500/10'
-                  : file
-                  ? 'border-emerald-500/40 bg-emerald-950/20'
-                  : 'border-slate-700/80 hover:border-slate-600 bg-slate-900/40 hover:bg-slate-900/70'
-              }`}
-            >
-              <input {...getInputProps()} />
-              {file ? (
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
-                    <CheckCircle2 className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-white">{file.name}</p>
-                    <p className="text-xs text-slate-400">{(file.size / 1024).toFixed(1)} KB • PDF Ready for Analysis</p>
-                  </div>
-                  <span className="text-xs text-emerald-400 underline mt-1">Click or drag another file to replace</span>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
-                    <UploadCloud className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-white">Drag & drop your resume PDF here</p>
-                    <p className="text-xs text-slate-400 mt-1">Supports searchable PDF files (up to 10MB)</p>
-                  </div>
-                  <span className="text-xs px-3 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700">
-                    Browse Computer
-                  </span>
-                </div>
-              )}
+      <form onSubmit={handleSubmit}>
+        {/* Two-column layout on desktop; stacked with Upload first on mobile */}
+        <div className="flex flex-col md:grid md:grid-cols-2 gap-6 lg:gap-8 items-start">
+          
+          {/* LEFT HALF (Desktop Column 1, Mobile Order 2): Match & Search Preferences */}
+          <div className="order-2 md:order-1 w-full glass-panel p-6 sm:p-7 space-y-6">
+            <div className="flex items-center justify-between pb-3 border-b border-[#2A303C]">
+              <h2 className="text-base sm:text-lg font-bold text-[#E5E7EB] flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-[#D4C4A8]" />
+                Match & Search Preferences
+              </h2>
+              <span className="text-xs text-[#9CA3AF]">Custom Criteria</span>
             </div>
-          ) : (
-            <div className="p-4 rounded-xl bg-emerald-950/20 border border-emerald-500/30 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold">
-                  PDF
-                </div>
-                <div>
-                  <h4 className="text-sm font-semibold text-white">Alex Rivera - Full Stack Engineer (Sample)</h4>
-                  <p className="text-xs text-emerald-400">2.5 Years Experience • Python, FastAPI, React, PostgreSQL</p>
-                </div>
-              </div>
-              <button 
-                type="button" 
-                onClick={() => setUseSample(false)}
-                className="text-xs text-slate-400 hover:text-white underline"
-              >
-                Clear
-              </button>
-            </div>
-          )}
-        </div>
 
-        {/* Step 2: Search Preferences */}
-        <div className="glass-panel rounded-2xl p-6 sm:p-8 space-y-6">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Sliders className="w-5 h-5 text-emerald-400" />
-            2. Match & Search Preferences
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Job Types */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2.5">
-                Job Types
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#9CA3AF] mb-2.5">
+                Target Employment Types
               </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
-                  { id: 'fte', label: 'Full Time (FTE)' },
+                  { id: 'fte', label: 'Full-Time' },
                   { id: 'intern', label: 'Internship' },
                   { id: 'contract', label: 'Contract' },
-                  { id: 'part_time', label: 'Part Time' },
-                ].map((type) => {
-                  const active = jobTypes.includes(type.id);
+                  { id: 'part_time', label: 'Part-Time' },
+                ].map((item) => {
+                  const active = jobTypes.includes(item.id);
                   return (
                     <button
-                      key={type.id}
+                      key={item.id}
                       type="button"
-                      onClick={() => handleToggleJobType(type.id)}
-                      className={`px-3 py-2.5 rounded-xl text-xs font-medium border text-left transition-all ${
-                        active
-                          ? 'bg-emerald-500/15 border-emerald-500/50 text-emerald-300'
-                          : 'bg-slate-900/40 border-slate-800 text-slate-400 hover:bg-slate-800/60'
+                      onClick={() => handleToggleJobType(item.id)}
+                      className={`px-3 py-2 text-xs font-medium rounded-xl transition-all text-center ${
+                        active ? 'chip-selected' : 'chip-unselected'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <span>{type.label}</span>
-                        {active && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>}
-                      </div>
+                      {item.label}
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Sort Priority */}
+            {/* Target Locations */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2.5">
-                Sort Priority
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { id: 'match', label: 'Best Match' },
-                  { id: 'salary', label: 'Highest Pay' },
-                  { id: 'recency', label: 'Most Recent' },
-                ].map((sort) => {
-                  const active = sortBy === sort.id;
-                  return (
-                    <button
-                      key={sort.id}
-                      type="button"
-                      onClick={() => setSortBy(sort.id)}
-                      className={`px-3 py-2.5 rounded-xl text-xs font-medium border text-center transition-all ${
-                        active
-                          ? 'bg-teal-500/20 border-teal-500/60 text-teal-300'
-                          : 'bg-slate-900/40 border-slate-800 text-slate-400 hover:bg-slate-800/60'
-                      }`}
-                    >
-                      {sort.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Max Age */}
-              <div className="mt-4">
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                  Max Posting Age
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-[#9CA3AF]">
+                  Target Locations
                 </label>
-                <div className="flex gap-2">
-                  {[7, 14, 30, 60].map((days) => (
-                    <button
-                      key={days}
-                      type="button"
-                      onClick={() => setMaxAgeDays(days)}
-                      className={`flex-1 py-1.5 text-xs rounded-lg border ${
-                        maxAgeDays === days
-                          ? 'bg-blue-500/20 border-blue-500/50 text-blue-300'
-                          : 'bg-slate-900/40 border-slate-800 text-slate-400 hover:bg-slate-800'
-                      }`}
-                    >
-                      {days}d
-                    </button>
-                  ))}
+                <div className="flex items-center gap-4">
+                  {/* Remote Only Toggle */}
+                  <label className="flex items-center gap-1.5 text-xs text-[#E5E7EB] cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={remoteOnly}
+                      onChange={(e) => setRemoteOnly(e.target.checked)}
+                      className="w-3.5 h-3.5 rounded border-[#4B5563] bg-[#14171E] accent-[#D4C4A8] cursor-pointer"
+                    />
+                    <span>Remote Only</span>
+                  </label>
+
+                  {/* Any Location Toggle */}
+                  <label className="flex items-center gap-1.5 text-xs text-[#E5E7EB] cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={anyLocation}
+                      onChange={(e) => handleToggleAnyLocation(e.target.checked)}
+                      className="w-3.5 h-3.5 rounded border-[#4B5563] bg-[#14171E] accent-[#D4C4A8] cursor-pointer"
+                    />
+                    <span className="font-medium text-[#D4C4A8]">Any Location (Worldwide)</span>
+                  </label>
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Salary Filter Slider */}
-          <div className="pt-4 border-t border-slate-800">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="enableSalary"
-                  checked={enableMinSalary}
-                  onChange={(e) => setEnableMinSalary(e.target.checked)}
-                  className="rounded border-slate-700 text-emerald-500 focus:ring-emerald-500/30 bg-slate-900"
-                />
-                <label htmlFor="enableSalary" className="text-xs font-semibold text-slate-300 uppercase tracking-wider cursor-pointer">
-                  Filter by Minimum Annual Salary
-                </label>
-              </div>
-              <span className={`text-sm font-bold ${enableMinSalary ? 'text-emerald-400' : 'text-slate-500'}`}>
-                {enableMinSalary ? `₹${minSalaryLPA} LPA (${(minSalaryLPA * 100000).toLocaleString('en-IN')})` : 'Any Salary (Unfiltered)'}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <span className="text-xs text-slate-500">₹0</span>
-              <input
-                type="range"
-                min="0"
-                max="40"
-                step="1"
-                value={minSalaryLPA}
-                disabled={!enableMinSalary}
-                onChange={(e) => setMinSalaryLPA(Number(e.target.value))}
-                className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${
-                  enableMinSalary ? 'bg-slate-700 accent-emerald-500' : 'bg-slate-800 opacity-40 cursor-not-allowed'
-                }`}
-              />
-              <span className="text-xs text-slate-500">₹40 LPA+</span>
-            </div>
-            <p className="text-[11px] text-slate-500 mt-1">
-              Note: Postings that do not list salary are kept and ranked appropriately.
-            </p>
-          </div>
-
-          {/* Locations */}
-          <div className="pt-4 border-t border-slate-800">
-            <div className="flex items-center justify-between mb-2.5">
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                Target Locations
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="remoteOnly"
-                  checked={remoteOnly}
-                  onChange={(e) => setRemoteOnly(e.target.checked)}
-                  className="rounded border-slate-700 text-emerald-500 focus:ring-emerald-500/30 bg-slate-900"
-                />
-                <label htmlFor="remoteOnly" className="text-xs text-slate-400 cursor-pointer flex items-center gap-1">
-                  <Globe className="w-3.5 h-3.5 text-blue-400" />
-                  Remote Only
-                </label>
-              </div>
-            </div>
-
-            {!remoteOnly && (
+              {/* Location Input & Chips */}
               <div className="space-y-2">
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {locations.map((loc) => (
-                    <span 
-                      key={loc}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs bg-slate-800 text-slate-200 border border-slate-700"
-                    >
-                      <MapPin className="w-3 h-3 text-emerald-400" />
-                      {loc}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveLocation(loc)}
-                        className="hover:text-red-400"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-
-                <div className="flex gap-2">
+                <div className="relative">
+                  <MapPin className="w-4 h-4 text-[#6B7280] absolute left-3 top-3" />
                   <input
                     type="text"
-                    placeholder="Type city or region and press Enter (e.g. Bangalore, Hyderabad, Remote)..."
+                    disabled={anyLocation}
+                    placeholder={
+                      anyLocation 
+                        ? 'Any location is active (worldwide & remote roles included)' 
+                        : 'Type city or country and press Enter (e.g. San Francisco, India)...'
+                    }
                     value={locationInput}
                     onChange={(e) => setLocationInput(e.target.value)}
                     onKeyDown={handleAddLocation}
-                    className="flex-1 bg-slate-900/60 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                    className={`w-full pl-9 pr-3 py-2 text-xs rounded-xl border bg-[#0A0C10] text-[#E5E7EB] transition-all ${
+                      anyLocation 
+                        ? 'border-[#2A303C] text-[#6B7280] cursor-not-allowed opacity-60' 
+                        : 'border-[#374151] focus:border-[#D4C4A8] focus:ring-1 focus:ring-[#D4C4A8]/40'
+                    }`}
                   />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (locationInput.trim()) {
-                        if (!locations.includes(locationInput.trim())) {
-                          setLocations([...locations, locationInput.trim()]);
-                        }
-                        setLocationInput('');
-                      }
-                    }}
-                    className="px-4 py-2 rounded-xl bg-slate-800 text-slate-200 hover:bg-slate-700 text-xs font-semibold"
-                  >
-                    Add
-                  </button>
                 </div>
-              </div>
-            )}
-          </div>
-        </div>
 
-        {/* Submit CTA */}
-        <div className="flex justify-center pt-2">
-          <button
-            type="submit"
-            disabled={isSubmitting || (!file && !useSample)}
-            className={`w-full sm:w-auto min-w-[320px] px-8 py-4 rounded-xl font-bold text-white text-base shadow-xl flex items-center justify-center gap-3 transition-all duration-300 ${
-              isSubmitting || (!file && !useSample)
-                ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-blue-600 hover:from-emerald-400 hover:to-blue-500 shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.01]'
-            }`}
-          >
-            {isSubmitting ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Launching LangGraph Pipeline...</span>
-              </>
-            ) : (
-              <>
-                <span>Analyze Resume & Match Jobs</span>
-                <ArrowRight className="w-5 h-5" />
-              </>
-            )}
-          </button>
+                {/* Selected Location Chips */}
+                {locations.length > 0 && !anyLocation && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {locations.map((loc) => (
+                      <span
+                        key={loc}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-[#D4C4A8]/10 text-[#D4C4A8] border border-[#D4C4A8]/25"
+                      >
+                        {loc}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveLocation(loc)}
+                          className="hover:text-white"
+                          aria-label={`Remove ${loc}`}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Salary Preference (Soft Filter / Ranking Boost) */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-[#9CA3AF] flex items-center gap-1.5">
+                  <DollarSign className="w-3.5 h-3.5 text-[#D4C4A8]" />
+                  Target Compensation Preference
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setEnableMinSalary(!enableMinSalary)}
+                  className={`text-xs px-2.5 py-0.5 rounded-full border transition-all ${
+                    enableMinSalary 
+                      ? 'bg-[#D4C4A8]/15 text-[#D4C4A8] border-[#D4C4A8]/40 font-semibold' 
+                      : 'bg-[#14171E] text-[#9CA3AF] border-[#374151]'
+                  }`}
+                >
+                  {enableMinSalary ? `Active: ₹${minSalaryLPA} LPA+` : 'No Minimum'}
+                </button>
+              </div>
+
+              {enableMinSalary && (
+                <div className="p-3.5 rounded-xl bg-[#0A0C10] border border-[#2A303C] space-y-2 mt-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-[#9CA3AF]">Desired Minimum Salary:</span>
+                    <span className="text-[#D4C4A8] font-bold text-sm">₹{minSalaryLPA} LPA</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="3"
+                    max="60"
+                    step="1"
+                    value={minSalaryLPA}
+                    onChange={(e) => setMinSalaryLPA(Number(e.target.value))}
+                    className="w-full accent-[#D4C4A8] cursor-pointer bg-[#222733]"
+                  />
+                  <div className="flex justify-between text-[10px] text-[#6B7280]">
+                    <span>₹3 LPA</span>
+                    <span>₹30 LPA</span>
+                    <span>₹60 LPA+</span>
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex items-start gap-1.5 mt-2 text-[11px] text-[#6B7280] leading-relaxed">
+                <Info className="w-3.5 h-3.5 text-[#9CA3AF] flex-shrink-0 mt-0.5" />
+                <span>
+                  Soft preference: prioritizes matching compensation in ranking. Roles without published salary figures are preserved so you never miss high-fit opportunities.
+                </span>
+              </div>
+            </div>
+
+            {/* Sorting & Max Age Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-[#2A303C]">
+              {/* Sort Priority */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-[#9CA3AF] mb-1.5">
+                  Sorting Priority
+                </label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#374151] bg-[#0A0C10] text-[#E5E7EB] focus:border-[#D4C4A8] focus:ring-1 focus:ring-[#D4C4A8]/40"
+                >
+                  <option value="match">Match Score (Highest First)</option>
+                  <option value="recency">Freshness / Date Posted</option>
+                  <option value="salary">Compensation (Highest First)</option>
+                </select>
+              </div>
+
+              {/* Max Age */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-[#9CA3AF] mb-1.5">
+                  Max Posting Age
+                </label>
+                <select
+                  value={maxAgeDays}
+                  onChange={(e) => setMaxAgeDays(Number(e.target.value))}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#374151] bg-[#0A0C10] text-[#E5E7EB] focus:border-[#D4C4A8] focus:ring-1 focus:ring-[#D4C4A8]/40"
+                >
+                  <option value={7}>Last 7 Days (Fresh)</option>
+                  <option value={14}>Last 14 Days</option>
+                  <option value={30}>Last 30 Days (Standard)</option>
+                  <option value={60}>Last 60 Days (Broad)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT HALF (Desktop Column 2, Mobile Order 1): Upload Card & Analyze Button */}
+          <div className="order-1 md:order-2 w-full space-y-4">
+               {/* Upload Card */}
+            <div className="glass-panel p-6 sm:p-7 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-[#2A303C]">
+                <h2 className="text-base sm:text-lg font-bold text-[#E5E7EB] flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-[#D4C4A8]" />
+                  Upload Your Resume (PDF)
+                </h2>
+                <span className="text-xs text-[#9CA3AF]">Direct AI Analysis</span>
+              </div>
+
+              {/* Dropzone Area */}
+              <div
+                {...getRootProps()}
+                className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200 ${
+                  isDragActive
+                    ? 'border-[#D4C4A8] bg-[#D4C4A8]/5'
+                    : file
+                    ? 'border-[#D4C4A8]/50 bg-[#1B1F28]'
+                    : 'border-[#374151] hover:border-[#D4C4A8]/40 bg-[#0A0C10]/60 hover:bg-[#14171E]'
+                }`}
+              >
+                <input {...getInputProps()} />
+                {file ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-[#D4C4A8]/15 flex items-center justify-center text-[#D4C4A8]">
+                      <CheckCircle2 className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-[#E5E7EB]">{file.name}</p>
+                      <p className="text-xs text-[#9CA3AF]">{(file.size / 1024).toFixed(1)} KB • PDF Ready for Analysis</p>
+                    </div>
+                    <span className="text-xs text-[#D4C4A8] hover:underline">
+                      Click or drag to replace
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-[#14171E] border border-[#2A303C] flex items-center justify-center text-[#9CA3AF]">
+                      <UploadCloud className="w-6 h-6 text-[#D4C4A8]" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-[#E5E7EB]">
+                        Drop your resume here, or <span className="text-[#D4C4A8] underline">browse</span>
+                      </p>
+                      <p className="text-xs text-[#6B7280] mt-1">Supports standard PDF formats up to 10MB</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Privacy Guarantee */}
+              <div className="text-[11px] text-[#6B7280] text-center pt-1">
+                Your data is processed in-memory and hashed for session search only. No profile data is stored permanently.
+              </div>
+            </div>
+
+            {/* Primary Action Button (Directly Below Upload Card) */}
+            <div className="space-y-2">
+              <button
+                type="submit"
+                disabled={!isReadyToAnalyze || isSubmitting}
+                className="btn-champagne w-full py-4 text-sm font-semibold rounded-xl flex items-center justify-center gap-2 shadow-lg"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-[#0A0C10] border-t-transparent rounded-full animate-spin" />
+                    <span>Initiating Multi-Agent Pipeline...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Analyze Resume & Match Jobs</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+
+              {/* Clarifying Hint Under Button */}
+              <p className="text-xs text-center text-[#6B7280]">
+                {!isReadyToAnalyze 
+                  ? "Upload your PDF resume to begin matching real live jobs." 
+                  : "Ready. Launching live search across JSearch, Adzuna, Remotive, Arbeitnow & verified portals."}
+              </p>
+            </div>
+
+          </div>
+
         </div>
       </form>
     </motion.div>

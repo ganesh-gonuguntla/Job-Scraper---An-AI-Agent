@@ -22,6 +22,7 @@ def dispatch_search_queries(state: GraphState) -> List[Send]:
     for q in queries:
         sends.append(Send("search_one", {
             "query": q,
+            "preferences": prefs,
             "max_age_days": max_age_days,
         }))
     return sends

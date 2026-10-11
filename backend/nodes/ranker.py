@@ -4,53 +4,64 @@ from backend.state import GraphState
 
 def apply_ranker(scored_jobs: List[ScoredJob], preferences: Preferences) -> List[ScoredJob]:
     """
-    Deterministic ranking and filtering:
-    1. Filter by allowed job types (if known).
-    2. Filter by min_salary_inr_annual: drop if salary is listed and max < min_salary.
-       (Unlisted salary is kept).
-    3. Sort according to preferences.sort_by:
-       - 'match': score descending, then recency descending
-       - 'salary': salary_annual_inr descending (nulls last), then score descending
-       - 'recency': posted_date descending (nulls last), then score descending
-    4. Cap at top 15.
+    Deterministic ranking with soft preference boosts (NEVER drops):
+    - Job type, location, and salary are soft ranking boosts (+5 pts each), never filters.
+    - All jobs scoring >= 20 are shown.
+    - Sorting by user preference: match, salary, or recency.
     """
-    filtered = []
-    allowed_types = set(preferences.job_types)
+    allowed_types = set(t.lower() for t in (preferences.job_types or ["fte", "intern"]))
+    target_locations = [loc.lower().strip() for loc in (preferences.locations or ["any"])]
+    is_any_loc = any(loc in ["any", "worldwide", "global", "all"] for loc in target_locations)
     min_sal = preferences.min_salary_inr_annual
 
+    # Calculate soft ranking boost per job without dropping any job
+    job_boosted: List[tuple[ScoredJob, float]] = []
     for job in scored_jobs:
-        # Check job type: if known and not in allowed_types, drop
-        if job.job_type != "unknown" and job.job_type not in allowed_types:
-            continue
+        boost = 0.0
 
-        # Check salary: if min_salary requested and job has known salary below it, drop
+        # Soft boost 1: Job type alignment
+        if job.job_type in allowed_types or (job.job_type == "unknown" and len(allowed_types) > 0):
+            boost += 5.0
+
+        # Soft boost 2: Location / Remote preference
+        job_loc = (job.location or "").lower()
+        if is_any_loc or job.remote:
+            boost += 5.0
+        elif any(loc in job_loc for loc in target_locations):
+            boost += 5.0
+
+        # Soft boost 3: Salary preference
         if min_sal is not None and job.salary_annual_inr is not None:
-            if job.salary_annual_inr < min_sal:
-                continue
+            if job.salary_annual_inr >= min_sal:
+                boost += 5.0
 
-        filtered.append(job)
+        effective_score = job.score + boost
+        job_boosted.append((job, effective_score))
 
-    # Sorting
-    sort_by = preferences.sort_by
+    # Requirement: Everything scoring >= 20 is shown
+    qualifying_pairs = [(j, eff) for (j, eff) in job_boosted if j.score >= 20]
+    if not qualifying_pairs and job_boosted:
+        # Fallback to show whatever was scored
+        qualifying_pairs = job_boosted
 
-    def sort_key(j: ScoredJob):
-        score_val = j.score
+    sort_by = preferences.sort_by or "match"
+
+    def sort_key(pair: tuple[ScoredJob, float]):
+        j, eff = pair
+        score_val = eff
         recency_val = j.posted_date or ""
         sal_val = j.salary_annual_inr if j.salary_annual_inr is not None else -1.0
 
         if sort_by == "match":
-            # Primary: score desc, Secondary: recency desc
             return (score_val, recency_val)
         elif sort_by == "salary":
-            # Primary: salary desc (nulls last, so -1.0 is lowest), Secondary: score desc
             return (sal_val, score_val, recency_val)
         elif sort_by == "recency":
-            # Primary: recency desc, Secondary: score desc
             return (recency_val, score_val)
         return (score_val, recency_val)
 
-    filtered.sort(key=sort_key, reverse=True)
-    return filtered[:15]
+    qualifying_pairs.sort(key=sort_key, reverse=True)
+    return [pair[0] for pair in qualifying_pairs]
 
 def ranker(state: GraphState) -> Dict[str, Any]:
     scored_jobs = state.get("scored_jobs", [])
@@ -59,7 +70,13 @@ def ranker(state: GraphState) -> Dict[str, Any]:
         prefs = Preferences(job_types=["fte", "intern"], sort_by="match")
 
     final_jobs = apply_ranker(scored_jobs, prefs)
+
+    funnel = state.get("funnel", {})
+    if funnel:
+        funnel.setdefault("shown", {})["count"] = len(final_jobs)
+
     return {
         "final_jobs": final_jobs,
-        "status_note": f"Ranked top {len(final_jobs)} jobs according to preferences",
+        "funnel": funnel,
+        "status_note": f"Ranked {len(final_jobs)} jobs with soft preference boosts (score >= 20)",
     }

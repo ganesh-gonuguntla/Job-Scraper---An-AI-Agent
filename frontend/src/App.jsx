@@ -21,6 +21,11 @@ export default function App() {
   const [isResuming, setIsResuming] = useState(false);
   const [isReranking, setIsReranking] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [sourceCounts, setSourceCounts] = useState(null);
+  const [sourceStatuses, setSourceStatuses] = useState(null);
+  const [funnel, setFunnel] = useState(null);
+  const [countriesUsed, setCountriesUsed] = useState([]);
+  const [expansionAction, setExpansionAction] = useState(null);
 
   // Close SSE stream cleanup reference
   const [streamUnsubscribe, setStreamUnsubscribe] = useState(null);
@@ -43,6 +48,7 @@ export default function App() {
       setNodeSummaries({});
       setStatusNote(null);
       setFinalJobs([]);
+      setSourceStatuses(null);
 
       const data = await startRun(file, userPrefs);
       setRunId(data.run_id);
@@ -65,10 +71,25 @@ export default function App() {
           setInterruptData(interruptPayload);
           setScreen('review');
         },
-        onResult: ({ final_jobs, status_note }) => {
+        onResult: ({ final_jobs, status_note, source_counts, source_statuses, funnel, countries_used, expansion_action }) => {
           setFinalJobs(final_jobs || []);
           if (status_note) {
             setStatusNote(status_note);
+          }
+          if (source_counts) {
+            setSourceCounts(source_counts);
+          }
+          if (source_statuses) {
+            setSourceStatuses(source_statuses);
+          }
+          if (funnel) {
+            setFunnel(funnel);
+          }
+          if (countries_used) {
+            setCountriesUsed(countries_used);
+          }
+          if (expansion_action) {
+            setExpansionAction(expansion_action);
           }
           setScreen('results');
         },
@@ -132,7 +153,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-emerald-500 selection:text-white">
+    <div className="min-h-screen flex flex-col bg-[#0A0C10] text-[#E5E7EB] selection:bg-[#D4C4A8] selection:text-[#0A0C10]">
       <Navbar 
         onReset={handleReset} 
         isProcessing={screen === 'progress' || screen === 'review'} 
@@ -141,7 +162,7 @@ export default function App() {
       {/* Global Error Banner */}
       {errorMessage && (
         <div className="max-w-4xl mx-auto px-4 w-full mt-4">
-          <div className="p-4 rounded-xl bg-red-950/80 border border-red-500/40 text-red-200 flex items-center justify-between text-xs">
+          <div className="p-4 rounded-xl bg-[#1E1418] border border-red-500/30 text-red-200 flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
               <span>{errorMessage}</span>
@@ -149,6 +170,7 @@ export default function App() {
             <button 
               onClick={() => setErrorMessage(null)} 
               className="hover:text-white ml-2"
+              aria-label="Dismiss error"
             >
               <X className="w-4 h-4" />
             </button>
@@ -186,6 +208,11 @@ export default function App() {
           <ResultsScreen
             jobs={finalJobs}
             statusNote={statusNote}
+            sourceCounts={sourceCounts}
+            sourceStatuses={sourceStatuses}
+            funnel={funnel}
+            countriesUsed={countriesUsed}
+            expansionAction={expansionAction}
             onRerank={handleRerank}
             isReranking={isReranking}
             onReset={handleReset}
@@ -195,10 +222,18 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950/80 py-6 text-center text-xs text-slate-500">
-        <p>
-          JobPulse • Powered by LangGraph, Google Gemini, Groq, and Exa • Free-Tier Optimized
-        </p>
+      <footer className="border-t border-[#2A303C] bg-[#07090C] py-6 text-center text-xs text-[#9CA3AF]">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-[#E5E7EB] font-semibold tracking-tight">
+            <span>JobPulse</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#D4C4A8]/10 text-[#D4C4A8] border border-[#D4C4A8]/20">
+              Grand Tourer Edition
+            </span>
+          </div>
+          <p className="text-[11px] text-[#6B7280]">
+            LangGraph Autonomous Agent • Groq High-Precision Extractions • Verified Live Career Portals
+          </p>
+        </div>
       </footer>
     </div>
   );

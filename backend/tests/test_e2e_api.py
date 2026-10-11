@@ -3,9 +3,13 @@ import json
 import httpx
 import pytest
 
+from backend.api import app
+
 @pytest.mark.asyncio
 async def test_full_pipeline_lifecycle():
-    async with httpx.AsyncClient(base_url="http://127.0.0.1:8000", timeout=30.0) as client:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://testserver", timeout=120.0) as client:
+
         # 1. Health check
         health = await client.get("/api/health")
         assert health.status_code == 200

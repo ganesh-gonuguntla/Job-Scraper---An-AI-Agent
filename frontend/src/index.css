@@ -4,50 +4,146 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --gt-bg: #0A0C10;
+  --gt-surface: #14171E;
+  --gt-surface-raised: #1B1F28;
+  --gt-surface-elevated: #222733;
+  --gt-text: #E5E7EB;
+  --gt-text-muted: #9CA3AF;
+  --gt-text-subtle: #6B7280;
+  --gt-accent: #D4C4A8;
+  --gt-accent-hover: #E4D7C2;
+  --gt-accent-subtle: rgba(212, 196, 168, 0.12);
+  --gt-gunmetal: #4B5563;
+  --gt-border: rgba(75, 85, 99, 0.32);
+  --gt-border-hover: rgba(212, 196, 168, 0.45);
+  --gt-focus-ring: rgba(212, 196, 168, 0.35);
+}
+
 @layer base {
   body {
-    @apply bg-slate-950 text-slate-100 font-sans antialiased min-h-screen selection:bg-emerald-500 selection:text-white;
+    background-color: var(--gt-bg);
+    color: var(--gt-text);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    selection-background-color: #D4C4A8;
+    selection-color: #0A0C10;
+    /* Executive ambient subtle backlight */
     background-image: 
-      radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.08) 0px, transparent 50%),
-      radial-gradient(at 100% 0%, rgba(59, 130, 246, 0.08) 0px, transparent 50%),
-      radial-gradient(at 50% 100%, rgba(139, 92, 246, 0.05) 0px, transparent 50%);
+      radial-gradient(ellipse at 50% 0%, rgba(212, 196, 168, 0.04) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(20, 23, 30, 0.5) 0%, transparent 70%),
+      radial-gradient(ellipse at 20% 80%, rgba(27, 31, 40, 0.4) 0%, transparent 70%);
     background-attachment: fixed;
+  }
+
+  ::selection {
+    background: #D4C4A8;
+    color: #0A0C10;
   }
 }
 
+/* Grand Tourer Panel & Card Utilities */
 .glass-panel {
-  background: rgba(30, 41, 59, 0.7);
+  background: rgba(20, 23, 30, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--gt-border);
+  box-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.6);
+  border-radius: 16px;
 }
 
 .glass-card {
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #14171E;
+  border: 1px solid var(--gt-border);
+  border-radius: 14px;
+  transition: all 180ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card:hover {
-  border-color: rgba(16, 185, 129, 0.35);
+  background: #1B1F28;
+  border-color: rgba(212, 196, 168, 0.4);
   transform: translateY(-2px);
-  box-shadow: 0 12px 30px -10px rgba(16, 185, 129, 0.15);
+  box-shadow: 0 12px 28px -10px rgba(0, 0, 0, 0.7);
 }
 
-/* Custom subtle scrollbar */
+/* Primary Champagne Action Button */
+.btn-champagne {
+  background-color: #D4C4A8;
+  color: #0A0C10;
+  font-weight: 600;
+  border-radius: 12px;
+  transition: all 180ms ease-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-champagne:hover:not(:disabled) {
+  background-color: #E2D4BE;
+  box-shadow: 0 0 20px -3px rgba(212, 196, 168, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-champagne:disabled {
+  background-color: #222733;
+  color: #6B7280;
+  cursor: not-allowed;
+  border: 1px solid rgba(75, 85, 99, 0.3);
+  box-shadow: none;
+}
+
+/* Secondary Gunmetal Action Button */
+.btn-secondary {
+  background-color: transparent;
+  color: #E5E7EB;
+  border: 1px solid var(--gt-border);
+  font-weight: 500;
+  border-radius: 12px;
+  transition: all 180ms ease-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #1B1F28;
+  border-color: rgba(212, 196, 168, 0.4);
+  color: #FFFFFF;
+}
+
+/* Selected Chip / Toggle */
+.chip-selected {
+  border: 1px solid rgba(212, 196, 168, 0.55);
+  background-color: rgba(212, 196, 168, 0.12);
+  color: #D4C4A8;
+}
+
+.chip-unselected {
+  border: 1px solid var(--gt-border);
+  background-color: #14171E;
+  color: #9CA3AF;
+}
+
+.chip-unselected:hover {
+  background-color: #1B1F28;
+  border-color: rgba(75, 85, 99, 0.6);
+  color: #E5E7EB;
+}
+
+/* Custom Sleek Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.6);
+  background: #0A0C10;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(71, 85, 105, 0.6);
+  background: #2D333F;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.8);
+  background: #4B5563;
 }

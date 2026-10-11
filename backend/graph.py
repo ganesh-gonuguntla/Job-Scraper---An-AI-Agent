@@ -12,7 +12,6 @@ from backend.nodes.search_dispatcher import search_dispatcher, dispatch_search_q
 from backend.nodes.search_one import search_one
 from backend.nodes.rule_filter import rule_filter
 from backend.nodes.batch_builder import batch_builder
-from backend.nodes.extract_jobs import extract_jobs
 from backend.nodes.score_jobs import score_jobs
 from backend.nodes.ranker import ranker
 from backend.nodes.quality_gate import quality_gate, route_quality_gate
@@ -42,7 +41,6 @@ def build_graph(checkpointer=None):
     builder.add_node("search_one", search_one)
     builder.add_node("rule_filter", rule_filter)
     builder.add_node("batch_builder", batch_builder)
-    builder.add_node("extract_jobs", extract_jobs)
     builder.add_node("score_jobs", score_jobs)
     builder.add_node("ranker", ranker)
     builder.add_node("quality_gate", quality_gate)
@@ -89,8 +87,7 @@ def build_graph(checkpointer=None):
     )
 
     # Processing pipeline
-    builder.add_edge("batch_builder", "extract_jobs")
-    builder.add_edge("extract_jobs", "score_jobs")
+    builder.add_edge("batch_builder", "score_jobs")
     builder.add_edge("score_jobs", "ranker")
     builder.add_edge("ranker", "quality_gate")
 

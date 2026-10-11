@@ -1,67 +1,28 @@
-import re
 from datetime import datetime, timezone, timedelta
+import logging
+import re
 from typing import Any, Dict, List, Set
 from urllib.parse import urlparse, urlunparse
 
 from backend.config import MAX_CANDIDATES
-from backend.schemas import RawResult, Profile, Preferences
+from backend.schemas import RawResult, Profile, Preferences, Job, validate_job_guard
 from backend.state import GraphState
 
-NON_JOB_URL_PATTERNS = [
-    r"/blog(?:/|$)",
-    r"/articles?(?:/|$)",
-    r"/category(?:/|$)",
-    r"/tag(?:/|$)",
-    r"/courses?(?:/|$)",
-    r"/bootcamp(?:/|$)",
-    r"/learn(?:/|$)",
-    r"/pricing(?:/|$)",
-    r"/login(?:/|$)",
-    r"/signin(?:/|$)",
-    r"/search(?:/|\?|$)",
-    r"/browse(?:/|$)",
-    r"/directory(?:/|$)",
-    r"/archive(?:/|$)",
-    r"how-to-",
-    r"top-\d+",
-    r"interview-questions",
-]
-
-NON_JOB_TEXT_KEYWORDS = [
-    "enroll now",
-    "course fees",
-    "syllabus",
-    "bootcamp curriculum",
-    "interview tips",
-    "frequently asked questions",
-    "browse all jobs",
-    "50,000+ jobs",
-]
+logger = logging.getLogger(__name__)
 
 def normalize_url(url: str) -> str:
-    parsed = urlparse(url.strip())
-    # Remove fragments and tracking query params
-    clean_path = parsed.path.rstrip("/")
-    return urlunparse((parsed.scheme.lower(), parsed.netloc.lower(), clean_path, "", "", ""))
+    try:
+        parsed = urlparse(url.strip())
+        clean_path = parsed.path.rstrip("/")
+        return urlunparse((parsed.scheme.lower(), parsed.netloc.lower(), clean_path, "", "", ""))
+    except Exception:
+        return url.strip()
 
-def is_non_job_posting(url: str, title: str, text: str) -> bool:
-    url_lower = url.lower()
-    for pattern in NON_JOB_URL_PATTERNS:
-        if re.search(pattern, url_lower):
-            return True
-
-    text_lower = (title + " " + text).lower()
-    for kw in NON_JOB_TEXT_KEYWORDS:
-        if kw in text_lower:
-            return True
-
-    # Too short to be a job posting
-    if len(text.strip()) < 25:
-        return True
-
-    return False
-
-def is_stale_posting(published_str: str | None, max_age_days: int) -> bool:
+def is_strictly_stale_posting(published_str: str | None, max_age_days: int) -> bool:
+    """
+    Returns True ONLY if published date is valid, parseable, and strictly older
+    than max_age_days. If date is None or unparseable, it MUST PASS (flagged unknown).
+    """
     if not published_str:
         return False
     try:
@@ -74,84 +35,147 @@ def is_stale_posting(published_str: str | None, max_age_days: int) -> bool:
         pass
     return False
 
-def matches_job_type_preferences(text: str, allowed_types: List[str]) -> bool:
-    text_lower = text.lower()
-    intern_keywords = ["intern", "internship", "stipend", "trainee"]
-    fte_keywords = ["full-time", "full time", "fte", "permanent", "ctc", "lpa", "annual"]
-
-    has_intern = any(k in text_lower for k in intern_keywords)
-    has_fte = any(k in text_lower for k in fte_keywords)
-
-    intern_allowed = "intern" in allowed_types
-    fte_allowed = any(t in allowed_types for t in ["fte", "contract", "part_time"])
-
-    if has_intern and not intern_allowed and not has_fte:
-        return False
-    if has_fte and not fte_allowed and not has_intern:
-        return False
-
-    return True
-
-def compute_skill_overlap(top_skills: List[str], text: str) -> float:
-    if not top_skills:
-        return 0.5
-    text_lower = text.lower()
-    matched = 0
-    for skill in top_skills:
-        pattern = r"\b" + re.escape(skill.lower()) + r"\b"
-        if re.search(pattern, text_lower):
-            matched += 1
-    return matched / len(top_skills)
-
 def rule_filter(state: GraphState) -> Dict[str, Any]:
+    """
+    Dedup + Liveness Node:
+    - Normalizes and deduplicates jobs across sources.
+    - Only allowed hard drops:
+      1. Missing title, company, or apply_url.
+      2. Confirmed dead link.
+      3. Confirmed older than max posting age.
+      4. Duplicate posting.
+    - ALL relevance filtering is removed (no blog/course heuristics, no URL pattern checks,
+      no skill-overlap cutoffs, no description-length checks, no domain allowlists).
+    - Unknown employment type, posting date, salary, or location MUST PASS and be flagged 'unknown'.
+    - Tracks and returns a full multi-stage funnel counter.
+    """
     raw_results = state.get("raw_results", [])
     seen_urls: Set[str] = set(state.get("seen_urls", set()))
-    profile: Profile | None = state.get("profile")
     prefs: Preferences | None = state.get("preferences")
-
     max_age_days = prefs.max_age_days if prefs else 30
-    allowed_types = prefs.job_types if prefs else ["fte", "intern"]
-    top_skills = profile.top_skills if profile else []
+
+    # Funnel Tracking structures
+    by_source_counts: Dict[str, int] = {}
+    duplicate_examples: List[str] = []
+    missing_fields_examples: List[str] = []
+    stale_examples: List[str] = []
+    dead_link_examples: List[str] = []
+
+    normalized_count = 0
+    current_seen_urls: Set[str] = set()
+    current_seen_comp_titles: Set[tuple] = set()
 
     deduped_candidates: List[RawResult] = []
-    current_seen_in_batch: Set[str] = set()
+    kept_candidates: List[RawResult] = []
 
     for item in raw_results:
-        norm_url = normalize_url(item.url)
-        if norm_url in seen_urls or norm_url in current_seen_in_batch:
-            continue
-        current_seen_in_batch.add(norm_url)
+        job: Job | None = item.job
+        src = job.source if job and job.source else "Unknown"
+        by_source_counts[src] = by_source_counts.get(src, 0) + 1
+        normalized_count += 1
 
-        # 1. Non-posting check
-        if is_non_job_posting(item.url, item.title, item.text):
-            continue
+        title_str = (job.title if job and job.title else item.title) or ""
+        company_str = (job.company if job and job.company else "") or ""
+        apply_url_str = (job.apply_url if job and job.apply_url else item.url) or ""
 
-        # 2. Stale check
-        if is_stale_posting(item.published, max_age_days):
-            continue
+        # Stage 3: Deduplication
+        norm_url = normalize_url(apply_url_str) if apply_url_str else f"empty-{id(item)}"
+        comp_clean = re.sub(r"[^a-zA-Z0-9]", "", company_str.lower())
+        title_clean = re.sub(r"[^a-zA-Z0-9]", "", title_str.lower())[:25]
+        comp_title_key = (comp_clean, title_clean) if comp_clean else None
 
-        # 3. Job type check
-        if not matches_job_type_preferences(item.title + " " + item.text, allowed_types):
-            continue
-
-        # 4. Skill overlap calculation
-        score = compute_skill_overlap(top_skills, item.title + " " + item.text)
-        if score < 0.1:
+        if (apply_url_str and (norm_url in seen_urls or norm_url in current_seen_urls)) or (comp_title_key and comp_title_key in current_seen_comp_titles):
+            duplicate_examples.append(f"{title_str or 'Unknown'} at {company_str or 'Unknown'}")
             continue
 
-        item.rule_score = round(score, 3)
+        if apply_url_str:
+            current_seen_urls.add(norm_url)
+        if comp_title_key:
+            current_seen_comp_titles.add(comp_title_key)
         deduped_candidates.append(item)
 
-    # Sort descending by rule_score
-    deduped_candidates.sort(key=lambda x: x.rule_score, reverse=True)
-    kept_candidates = deduped_candidates[:MAX_CANDIDATES]
+        # Stage 4: Hard Filters (Only missing fields, confirmed stale, dead link)
+        if not title_str.strip() or not company_str.strip() or not apply_url_str.strip() or not apply_url_str.startswith("http"):
+            missing_fields_examples.append(f"{title_str or 'Empty Title'} at {company_str or 'Empty Company'}")
+            continue
 
-    # Add kept URLs to seen_urls
-    for cand in kept_candidates:
+        pub_date = (job.posted_date if job else item.published)
+        if is_strictly_stale_posting(pub_date, max_age_days):
+            stale_examples.append(f"{title_str} at {company_str} (published: {pub_date})")
+            continue
+
+        # Unknown fields pass through safely
+        if job:
+            if not job.job_type:
+                job.job_type = "unknown"
+            if not job.location or job.location.lower() in ["any", "worldwide", "remote", ""]:
+                job.location = "Remote / Unspecified"
+            if not job.posted_date:
+                job.posted_date = "unknown"
+
+        kept_candidates.append(item)
+
+    # Sort and cap candidates if needed
+    cap_limit = max(MAX_CANDIDATES, 40)
+    final_candidates = kept_candidates[:cap_limit]
+
+    for cand in final_candidates:
         seen_urls.add(normalize_url(cand.url))
 
+    # Construct Funnel
+    funnel = {
+        "fetched": {
+            "total": len(raw_results),
+            "by_source": by_source_counts,
+        },
+        "normalized": {
+            "count": normalized_count,
+        },
+        "deduped": {
+            "count": len(deduped_candidates),
+            "dropped": len(duplicate_examples),
+            "examples_dropped": duplicate_examples[:5],
+        },
+        "hard_filters": {
+            "passed": len(final_candidates),
+            "dropped": len(missing_fields_examples) + len(stale_examples) + len(dead_link_examples),
+            "drop_reasons": {
+                "missing_required_fields": {
+                    "count": len(missing_fields_examples),
+                    "examples": missing_fields_examples[:5],
+                },
+                "stale_posting": {
+                    "count": len(stale_examples),
+                    "examples": stale_examples[:5],
+                },
+                "dead_link": {
+                    "count": len(dead_link_examples),
+                    "examples": dead_link_examples[:5],
+                },
+            },
+        },
+        "scored": {
+            "total_evaluated": 0,
+            "passed_threshold": 0,
+            "below_threshold": 0,
+            "examples_below": [],
+        },
+        "shown": {
+            "count": 0,
+        },
+    }
+
+    logger.info(
+        f"[FUNNEL] Fetched={funnel['fetched']['total']} -> "
+        f"Normalized={funnel['normalized']['count']} -> "
+        f"Deduped={funnel['deduped']['count']} -> "
+        f"HardFiltersPassed={funnel['hard_filters']['passed']} "
+        f"(StaleDropped={len(stale_examples)}, MissingFieldsDropped={len(missing_fields_examples)})"
+    )
+
     return {
-        "candidates": kept_candidates,
+        "candidates": final_candidates,
         "seen_urls": seen_urls,
-        "status_note": f"Filtered to {len(kept_candidates)} relevant job candidates",
+        "funnel": funnel,
+        "status_note": f"Dedup + Liveness: {len(final_candidates)} jobs passed hard validation",
     }

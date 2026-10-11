@@ -10,7 +10,7 @@ from langgraph.types import Command
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from sse_starlette.sse import EventSourceResponse
 
-from backend.config import DB_PATH
+from backend.config import DB_PATH, log_config_startup
 from backend.graph import build_graph
 from backend.nodes.ranker import apply_ranker
 from backend.schemas import Preferences, Profile, SearchQuery, ScoredJob
@@ -25,6 +25,7 @@ saver_cm = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global async_graph, async_checkpointer, saver_cm
+    log_config_startup()
     logger.info("Initializing AsyncSqliteSaver checkpointer...")
     saver_cm = AsyncSqliteSaver.from_conn_string(str(DB_PATH))
     async_checkpointer = await saver_cm.__aenter__()
@@ -53,6 +54,12 @@ run_resume_payloads: Dict[str, Any] = {}
 active_runs: Dict[str, Dict[str, Any]] = {}
 
 async def run_graph_worker(run_id: str, initial_state: Dict[str, Any]):
+    global async_graph, async_checkpointer, saver_cm
+    if async_graph is None:
+        saver_cm = AsyncSqliteSaver.from_conn_string(str(DB_PATH))
+        async_checkpointer = await saver_cm.__aenter__()
+        async_graph = build_graph(checkpointer=async_checkpointer)
+
     queue = run_queues[run_id]
     thread_config = {"configurable": {"thread_id": run_id}}
 
@@ -123,6 +130,8 @@ async def run_graph_worker(run_id: str, initial_state: Dict[str, Any]):
             final_jobs_raw = state_snapshot.values.get("final_jobs", [])
             status_note = state_snapshot.values.get("status_note", None)
 
+            from backend.search import latest_source_counts, latest_source_statuses
+
             # Convert final jobs to JSON-serializable list
             final_jobs_data = []
             for j in final_jobs_raw:
@@ -131,11 +140,26 @@ async def run_graph_worker(run_id: str, initial_state: Dict[str, Any]):
                 elif isinstance(j, dict):
                     final_jobs_data.append(j)
 
+            if not final_jobs_data and not status_note:
+                status_note = "All sources returned zero matches for the requested preferences. No fake fallback data injected."
+
+            funnel_data = state_snapshot.values.get("funnel", {})
+            countries_used = state_snapshot.values.get("countries_used", [])
+            expansion_action = state_snapshot.values.get("expansion_action", None)
+
+            if run_id in active_runs:
+                active_runs[run_id]["funnel"] = funnel_data
+
             await queue.put({
                 "event": "result",
                 "data": json.dumps({
                     "final_jobs": final_jobs_data,
-                    "status_note": status_note
+                    "status_note": status_note,
+                    "source_counts": latest_source_counts,
+                    "source_statuses": latest_source_statuses,
+                    "funnel": funnel_data,
+                    "countries_used": countries_used,
+                    "expansion_action": expansion_action,
                 })
             })
             break
@@ -152,7 +176,60 @@ async def run_graph_worker(run_id: str, initial_state: Dict[str, Any]):
 
 @app.get("/api/health")
 async def health_check():
-    return {"status": "ok", "service": "job-matcher"}
+    from backend.config import GROQ_API_KEY, GEMINI_API_KEY, ADZUNA_APP_ID, ADZUNA_APP_KEY, OPENWEBNINJA_API_KEY
+    llm_healthy = bool(GROQ_API_KEY or GEMINI_API_KEY)
+    sources_healthy = bool((ADZUNA_APP_ID and ADZUNA_APP_KEY) or OPENWEBNINJA_API_KEY)
+    return {
+        "status": "ok",
+        "service": "jobpulse",
+        "llm_provider": "Groq",
+        "llm_healthy": llm_healthy,
+        "job_sources": "Adzuna + JSearch (OpenWeb Ninja) + Live ATS Feeds",
+        "sources_healthy": sources_healthy,
+    }
+
+@app.get("/api/config")
+async def get_config():
+    from backend.config import (
+        GROQ_API_KEY, GEMINI_API_KEY, ADZUNA_APP_ID, ADZUNA_APP_KEY,
+        OPENWEBNINJA_API_KEY, GROQ_RESEARCH_MODEL, GROQ_SCORING_MODEL,
+        DEFAULT_COUNTRIES
+    )
+    llm_healthy = bool(GROQ_API_KEY or GEMINI_API_KEY)
+    sources_healthy = bool((ADZUNA_APP_ID and ADZUNA_APP_KEY) or OPENWEBNINJA_API_KEY)
+    return {
+        "status": "ok",
+        "llm_provider": "Groq",
+        "research_model": GROQ_RESEARCH_MODEL,
+        "scoring_model": GROQ_SCORING_MODEL,
+        "default_countries": DEFAULT_COUNTRIES,
+        "llm_healthy": llm_healthy,
+        "job_sources": "Adzuna + JSearch (OpenWeb Ninja) + Live ATS Feeds",
+        "sources_healthy": sources_healthy,
+    }
+
+@app.get("/api/runs/{run_id}/funnel")
+async def get_run_funnel(run_id: str):
+    if run_id in active_runs and active_runs[run_id].get("funnel"):
+        return {"run_id": run_id, "funnel": active_runs[run_id]["funnel"]}
+
+    global async_graph
+    if async_graph:
+        try:
+            thread_config = {"configurable": {"thread_id": run_id}}
+            state_snapshot = await async_graph.aget_state(thread_config)
+            funnel = state_snapshot.values.get("funnel")
+            if funnel:
+                if run_id in active_runs:
+                    active_runs[run_id]["funnel"] = funnel
+                return {"run_id": run_id, "funnel": funnel}
+        except Exception as e:
+            logger.debug(f"Could not load state for funnel: {e}")
+
+    if run_id in active_runs:
+        return {"run_id": run_id, "funnel": active_runs[run_id].get("funnel", {})}
+
+    raise HTTPException(status_code=404, detail="Run funnel not found")
 
 @app.post("/api/runs")
 async def create_run(
@@ -169,17 +246,13 @@ async def create_run(
     if pdf:
         pdf_bytes = await pdf.read()
 
-    # Fallback if no PDF uploaded (e.g. mock testing or instant sample)
-    if not pdf_bytes:
-        from pathlib import Path
-        sample_path = Path(__file__).resolve().parent.parent / "fixtures" / "sample_resume.txt"
-        if sample_path.exists():
-            sample_text = sample_path.read_text(encoding="utf-8")
-        else:
-            sample_text = "Software Engineer with experience in Python, React, FastAPI, Docker, and PostgreSQL."
-        resume_text_initial = sample_text
-    else:
-        resume_text_initial = ""
+    if not pdf_bytes or len(pdf_bytes.strip()) == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="A PDF resume is required. Please upload your resume to discover real job matches."
+        )
+
+    resume_text_initial = ""
 
     run_id = str(uuid.uuid4())
     queue = asyncio.Queue()
@@ -190,6 +263,7 @@ async def create_run(
     active_runs[run_id] = {
         "preferences": prefs,
         "created_at": str(asyncio.get_event_loop().time()),
+        "funnel": {},
     }
 
     initial_state: Dict[str, Any] = {
@@ -207,6 +281,8 @@ async def create_run(
         "jobs": [],
         "scored_jobs": [],
         "final_jobs": [],
+        "funnel": {},
+        "audit_statuses": {},
         "retry_count": 0,
         "gate_passed": False,
         "status_note": None,

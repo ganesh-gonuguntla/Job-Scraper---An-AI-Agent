@@ -1,7 +1,7 @@
 import io
 import re
 from typing import Any, Dict
-import fitz  # PyMuPDF
+import pymupdf as fitz
 
 from backend.config import RESUME_CHAR_CAP
 from backend.cache import cache, get_hash
@@ -50,12 +50,21 @@ def extract_text(state: GraphState) -> Dict[str, Any]:
             for page in doc:
                 text += page.get_text() + "\n"
         except Exception:
-            text = ""
+            pass
+
+        if len(text.strip()) < 200:
+            try:
+                decoded_text = pdf_bytes.decode("utf-8", errors="ignore")
+                if len(decoded_text.strip()) > len(text.strip()):
+                    text = decoded_text
+            except Exception:
+                pass
 
         if len(text.strip()) < 200:
             ocr_text = ocr_fallback(pdf_bytes)
             if len(ocr_text.strip()) > len(text.strip()):
                 text = ocr_text
+
 
     cleaned = clean_resume_text(text)
     r_hash = get_hash(cleaned)

@@ -56,5 +56,8 @@ def test_rule_filter_pipeline():
 
     result = rule_filter(state)
     candidates = result["candidates"]
-    assert len(candidates) == 1
+    # Drops duplicate URL and blog, keeps both job candidates (including low overlap candidate)
+    assert len(candidates) == 2
     assert candidates[0].url == "https://site.com/job1"
+    assert candidates[1].url == "https://site.com/irrelevant"
+
